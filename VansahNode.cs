@@ -29,7 +29,7 @@ namespace Practice
 
 
         //--------------------------- INFORM YOUR UNIQUE VANSAH TOKEN HERE ---------------------------------------------------
-        private static String VANSAH_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJjb20udmFuc2FoLmppcmEudmFuc2FoLXBsdWdpbiIsImlhdCI6MTY2NzQ5NDI3Niwic3ViIjoiNjE5ZGMzNmJkNTk4NmMwMDZhZDE3YjVlIiwiZXhwIjoyNjY3NDk0Mjc2LCJhdWQiOlsiYjVlZDljNTktMzc5Ni0zODI0LTk2ZjEtZGE4MDIyNGZlZGM2Il0sInR5cGUiOiJjb25uZWN0In0.necL5wgKDhWgxLrLfBDl18YRDMRpXS_f1W4mc7OtWBY";
+        private static String VANSAH_TOKEN = "Your Vansah Connect Token Here";
 
         //--------------------------------------------------------------------------------------------------------------------
 
