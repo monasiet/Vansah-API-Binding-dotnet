@@ -3,7 +3,7 @@
 </div>
 <h1 align="center" style="background-color:cornflowerblue !important;
     color: white !important;">
-  Java API-Binder
+  C#  API-Binder
 </h1>
 <p align="center">
    Vansah's API can be used to integrate Vansah with various tools, automation and development frameworks including third-party applications.
@@ -68,7 +68,7 @@ You may refer to the APIs documentation here: <a href="https://vansahapp.atlassi
 ## Adding Vansah API-Binding to a Selenium project
 
 
-Download Vansah API-Binding here: https://github.com/testpointcorp/Vansah-API-Binding-Java.git
+Download Vansah API-Binding here: https://github.com/testpointcorp/Vansah-API-Binding-C# .git
 
 For questions, suggestions, or other requests, please reach out to us through our support channels:
 https://community.vansah.com/ to raise a ticket: https://vansahapp.atlassian.net/servicedesk/customer/portals
