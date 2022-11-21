@@ -16,3 +16,12 @@ obj/Debug/net6.0/Verify.Attributes.cs
 obj/Debug/net6.0/.NETCoreApp,Version=v6.0.AssemblyAttributes.cs
 obj/Debug/net6.0/Practice.AssemblyInfo.cs
 obj/Debug/net6.0/Practice.GlobalUsings.g.cs
+.vs/Practice/v17/.suo
+*.v2
+*.vsidx
+*.sqlite
+*.lock
+.vs/Vansah-API-Binding-dotnet/v17/.suo
+obj/Release/net6.0/.NETCoreApp,Version=v6.0.AssemblyAttributes.cs
+obj/Release/net6.0/Practice.AssemblyInfo.cs
+obj/Release/net6.0/Practice.GlobalUsings.g.cs

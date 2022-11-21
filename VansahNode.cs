@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 using OpenQA.Selenium;
 using System;
 using System.Buffers.Text;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection.PortableExecutable;
@@ -10,411 +11,317 @@ using System.Text;
 using System.Text.Json.Nodes;
 using static System.Net.Mime.MediaTypeNames;
 
-namespace Practice
+namespace Vansah
 {
     public class VansahNode
     {
 
 
         //--------------------------- ENDPOINTS -------------------------------------------------------------------------------
-        private static String API_VERSION = "v1";
-        private static String VANSAH_URL = "https://prod.vansahnode.app";
-        private static String ADD_TEST_RUN = VANSAH_URL + "/api/" + API_VERSION + "/run";
-        private static String ADD_TEST_LOG = VANSAH_URL + "/api/" + API_VERSION + "/logs";
-        private static String UPDATE_TEST_LOG = VANSAH_URL + "/api/" + API_VERSION + "/logs/";
-        private static String REMOVE_TEST_LOG = VANSAH_URL + "/api/" + API_VERSION + "/logs/";
-        private static String REMOVE_TEST_RUN = VANSAH_URL + "/api/" + API_VERSION + "/run/";
-        private static String TEST_SCRIPT = VANSAH_URL + "/api/" + API_VERSION + "/testCase/list/testScripts";
+        private static string API_VERSION = "v1";
+        private static string VANSAH_URL = "https://prod.vansahnode.app";
+        private static string Add_TEST_RUN = VANSAH_URL + "/api/" + API_VERSION + "/run";
+        private static string Add_TEST_LOG = VANSAH_URL + "/api/" + API_VERSION + "/logs";
+        private static string UPDATE_TEST_LOG = VANSAH_URL + "/api/" + API_VERSION + "/logs/";
+        private static string REMOVE_TEST_LOG = VANSAH_URL + "/api/" + API_VERSION + "/logs/";
+        private static string REMOVE_TEST_RUN = VANSAH_URL + "/api/" + API_VERSION + "/run/";
+        private static string TEST_SCRIPT = VANSAH_URL + "/api/" + API_VERSION + "/testCase/list/testScripts";
         //--------------------------------------------------------------------------------------------------------------------
 
 
         //--------------------------- INFORM YOUR UNIQUE VANSAH TOKEN HERE ---------------------------------------------------
-        private static String VANSAH_TOKEN = "Your Vansah Connect Token Here";
-
-        //--------------------------------------------------------------------------------------------------------------------
-
-
-        //--------------------------- IF YOU ARE USING VANSAH BINDING BEHIND A PROXY, INFORM THE DETAILS HERE ----------------
-        private static String hostAddr = "";
-        private static String portNo = "";
-        //--------------------------------------------------------------------------------------------------------------------	
+        private static string VANSAH_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJjb20udmFuc2FoLmppcmEudmFuc2FoLXBsdWdpbiIsImlhdCI6MTY2ODQ4MzY2NCwic3ViIjoiNjE5ZGMzNmJkNTk4NmMwMDZhZDE3YjVlIiwiZXhwIjoyNjY4NDgzNjY0LCJhdWQiOlsiY2Q3YTJhZmQtYzgyYy0zYzY2LTgxMDItZWZmOGIwN2E5MjExIl0sInR5cGUiOiJjb25uZWN0In0.TWylCkTRCmmTWoZKzyIBuEG39b1bGX1mQMhzJJd2bmQ";
 
 
         //--------------------------- INFORM IF YOU WANT TO UPDATE VANSAH HERE -----------------------------------------------
         // 0 = NO RESULTS WILL BE SENT TO VANSAH
         // 1 = RESULTS WILL BE SENT TO VANSAH
-        private static readonly String updateVansah = "1";
+        private static readonly string updateVansah = "1";
         //--------------------------------------------------------------------------------------------------------------------	
 
 
         //--------------------------------------------------------------------------------------------------------------------
-        private String TESTFOLDERS_ID;  //Mandatory (GUID Test folder Identifer) Optional if issue_key is provided
-        private String JIRA_ISSUE_KEY;  //Mandatory (JIRA ISSUE KEY) Optional if Test Folder is provided
-        private String SPRINT_KEY; //Mandatory (SPRINT KEY)
-        private String CASE_KEY;   //CaseKey ID (Example - TEST-C1) Mandatory
-        private String RELEASE_KEY;  //Release Key (JIRA Release/Version Key) Mandatory
-        private String ENVIRONMENT_KEY; //Enivronment ID from Vansah for JIRA app. (Example SYS or UAT ) Mandatory
+        private string TESTFOLDERS_ID;  //Mandatory (GUID Test folder Identifer) Optional if issue_key is provided
+        private string JIRA_ISSUE_KEY;  //Mandatory (JIRA ISSUE KEY) Optional if Test Folder is provided
+        private string SPRINT_NAME; //Mandatory (SPRINT KEY)
+        private string CASE_KEY;   //CaseKey ID (Example - TEST-C1) Mandatory
+        private string RELEASE_NAME;  //Release Key (JIRA Release/Version Key) Mandatory
+        private string ENVIRONMENT_NAME; //Enivronment ID from Vansah for JIRA app. (Example SYS or UAT ) Mandatory
         private int RESULT_KEY;    // Result Key such as (Result value. Options: (0 = N/A, 1= FAIL, 2= PASS, 3 = Not tested)) Mandatory
         private bool SEND_SCREENSHOT;   // true or false If Required to take a screenshot of the webPage that to be tested.
-        private String COMMENT;  //Actual Result 	
+        private string COMMENT;  //Actual Result 	
         private int STEP_ORDER;   //Test Step index	
-        private String TEST_RUN_IDENTIFIER; //To be generated by API request
-        private String TEST_LOG_IDENTIFIER; //To be generated by API request
-        private String FILE;
+        private string TEST_RUN_IDENTIFIER; //To be generated by API request
+        private string TEST_LOG_IDENTIFIER; //To be generated by API request
+        private string FILE;
         private int testRows;
-        private String PROJECT_KEY;
         private HttpClient httpClient;
-        private WebDriver driver;
+
 
 
         //------------------------ VANSAH INSTANCE CREATION---------------------------------------------------------------------------------
         //Creates an Instance of vansahnode, to set all the required field
-        public VansahNode(String tESTFOLDERS_ID, String jiraIssue, String sprintKey, String release, String environment)
+        public VansahNode(string TESTFOLDERS, string jiraIssue)
         {
-            TESTFOLDERS_ID = tESTFOLDERS_ID;
-            RELEASE_KEY = release;
-            ENVIRONMENT_KEY = environment;
+            TESTFOLDERS_ID = TESTFOLDERS;
             JIRA_ISSUE_KEY = jiraIssue;
-            SPRINT_KEY = sprintKey;
+
+        }
+        //Default Constructor
+        public VansahNode()
+        {
         }
 
-        //------------------------ VANSAH ADD TEST RUN(TEST RUN IDENTIFIER CREATION) -------------------------------------------
+        //------------------------ VANSAH Add TEST RUN(TEST RUN IDENTIFIER CREATION) -------------------------------------------
         //POST prod.vansahnode.app/api/v1/run --> https://apidoc.vansah.com/#0ebf5b8f-edc5-4adb-8333-aca93059f31c
-        //creates a new test run Identifier which is then used with the other testing methods: 1) add_test_log 2) remove_test_run
+        //creates a new test run Identifier which is then used with the other testing methods: 1) Add_test_log 2) remove_test_run
 
         //For JIRA ISSUES
-        public void AddtestRunFromJIRAIssue(String testcase)
+        public void AddTestRunFromJiraIssue(string testcase)
         {
-            String[] project = testcase.Split("-"); ;
-            PROJECT_KEY = project[0];
+
             CASE_KEY = testcase;
             SEND_SCREENSHOT = false;
 
-            ConnectToVansahRest("addtestRunFromJIRAIssue", driver);
+            ConnectToVansahRest("AddTestRunFromJiraIssue", null);
         }
         //For TestFolders
-        public void AddTestRunFromTestFolder(String testcase)
+        public void AddTestRunFromTestFolder(string testcase)
         {
-            String[] project = testcase.Split("-"); ;
-            PROJECT_KEY = project[0];
+
             CASE_KEY = testcase;
-		    SEND_SCREENSHOT = false;
-		    ConnectToVansahRest("addTestRunFromTestFolder", driver);
+            SEND_SCREENSHOT = false;
+            ConnectToVansahRest("AddTestRunFromTestFolder", null);
         }
-    //------------------------------------------------------------------------------------------------------------------------
+        //------------------------------------------------------------------------------------------------------------------------
 
 
 
-    //-------------------------- VANSAH ADD TEST LOG (LOG IDENTIFIER CREATION ------------------------------------------------
-    //POST prod.vansahnode.app/api/v1/logs --> https://apidoc.vansah.com/#8cad9d9e-003c-43a2-b29e-26ec2acf67a7
-    //adds a new test log for the test case_key. Requires "test_run_identifier" from add_test_run
+        //-------------------------- VANSAH Add TEST LOG (LOG IDENTIFIER CREATION ------------------------------------------------
+        //POST prod.vansahnode.app/api/v1/logs --> https://apidoc.vansah.com/#8cad9d9e-003c-43a2-b29e-26ec2acf67a7
+        //Adds a new test log for the test case_key. Requires "test_run_identifier" from Add_test_run
 
-    public void AddtestLog(int result, String comment, int testStepRow, bool sendScreenShot, WebDriver driver)
-    {
+        public void AddTestLog(int result, string comment, int testStepRow, bool sendScreenShot, IWebDriver driver)
+        {
 
-		//0 = N/A, 1 = FAIL, 2 = PASS, 3 = Not tested
-		RESULT_KEY = result;
-		COMMENT = comment;
-		STEP_ORDER = testStepRow;
-		SEND_SCREENSHOT = sendScreenShot;
-        ConnectToVansahRest("addTestLog", driver);
-    }
-    //-------------------------------------------------------------------------------------------------------------------------
-
-
-
-    //------------------------- VANSAH ADD QUICK TEST --------------------------------------------------------------------------
-    //POST prod.vansahnode.app/api/v1/run --> https://apidoc.vansah.com/#0ebf5b8f-edc5-4adb-8333-aca93059f31c
-    //creates a new test run and a new test log for the test case_key. By calling this endpoint, 
-    //you will create a new log entry in Vansah with the respective overal Result. 
-    //(0 = N/A, 1= FAIL, 2= PASS, 3 = Not Tested). Add_Quick_Test is useful for test cases in which there are no steps in the test script, 
-    //where only the overall result is important.
-
-    //For JIRA ISSUES
-    public void AddQuickTestFromJiraISSUE(String testcase, int result, String comment, bool sendScreenShot, WebDriver driver)
-    {
-
-		//0 = N/A, 1= FAIL, 2= PASS, 3 = Not tested
-		CASE_KEY = testcase;
-		RESULT_KEY = result;
-		COMMENT = comment;
-		SEND_SCREENSHOT = sendScreenShot;
-        ConnectToVansahRest("addQuickTestFromJiraISSUE", driver);
-    }
-    //For TestFolders
-    public void AddQuickTestFromTestFolders(String testcase, int result, String comment, bool sendScreenShot, WebDriver driver)
-    {
-
-		//0 = N/A, 1= FAIL, 2= PASS, 3 = Not tested
-		CASE_KEY = testcase;
-		RESULT_KEY = result;
-		COMMENT = comment;
-		SEND_SCREENSHOT = sendScreenShot;
-        ConnectToVansahRest("addQuickTestFromTestFolders", driver);
-    }
-
-    //------------------------------------------------------------------------------------------------------------------------------
+            //0 = N/A, 1 = FAIL, 2 = PASS, 3 = Not tested
+            RESULT_KEY = result;
+            COMMENT = comment;
+            STEP_ORDER = testStepRow;
+            SEND_SCREENSHOT = sendScreenShot;
+            ConnectToVansahRest("AddTestLog", driver);
+        }
+        //-------------------------------------------------------------------------------------------------------------------------
 
 
-    //------------------------------------------ VANSAH REMOVE TEST RUN *********************************************
-    //POST prod.vansahnode.app/api/v1/run/{{test_run_identifier}} --> https://apidoc.vansah.com/#2f004698-34e9-4097-89ab-759a8d86fca8
-    //will delete the test log created from add_test_run or add_quick_test
 
-    public void RemoveTestRun()
-    {
-        ConnectToVansahRest("removeTestRun", driver);
-    }
-    //------------------------------------------------------------------------------------------------------------------------------
+        //------------------------- VANSAH Add QUICK TEST --------------------------------------------------------------------------
+        //POST prod.vansahnode.app/api/v1/run --> https://apidoc.vansah.com/#0ebf5b8f-edc5-4adb-8333-aca93059f31c
+        //creates a new test run and a new test log for the test case_key. By calling this endpoint, 
+        //you will create a new log entry in Vansah with the respective overal Result. 
+        //(0 = N/A, 1= FAIL, 2= PASS, 3 = Not Tested). Add_Quick_Test is useful for test cases in which there are no steps in the test script, 
+        //where only the overall result is important.
 
-    //------------------------------------------ VANSAH REMOVE TEST LOG *********************************************
-    //POST remove_test_log https://apidoc.vansah.com/#789414f9-43e7-4744-b2ca-1aaf9ee878e5
-    //will delete a test_log_identifier created from add_test_log or add_quick_test
+        //For JIRA ISSUES
+        public void AddQuickTestFromJiraIssue(string testcase, int result)
+        {
 
-    public void RemoveTestLog()
-    {
-        ConnectToVansahRest("removeTestLog", driver);
-    }
-    //------------------------------------------------------------------------------------------------------------------------------
+            //0 = N/A, 1= FAIL, 2= PASS, 3 = Not tested
+            CASE_KEY = testcase;
+            RESULT_KEY = result;
+
+            ConnectToVansahRest("AddQuickTestFromJiraIssue", null);
+        }
+        //For TestFolders
+        public void AddQuickTestFromTestFolders(string testcase, int result)
+        {
+
+            //0 = N/A, 1= FAIL, 2= PASS, 3 = Not tested
+            CASE_KEY = testcase;
+            RESULT_KEY = result;
+
+            ConnectToVansahRest("AddQuickTestFromTestFolders", null);
+        }
+
+        //------------------------------------------------------------------------------------------------------------------------------
 
 
-    //------------------------------------------ VANSAH UPDATE TEST LOG ------------------------------------------------------------
-    //POST update_test_log https://apidoc.vansah.com/#ae26f43a-b918-4ec9-8422-20553f880b48
-    //will perform any updates required using the test log identifier which is returned from add_test_log or add_quick_test
+        //------------------------------------------ VANSAH REMOVE TEST RUN *********************************************
+        //POST prod.vansahnode.app/api/v1/run/{{test_run_identifier}} --> https://apidoc.vansah.com/#2f004698-34e9-4097-89ab-759a8d86fca8
+        //will delete the test log created from Add_test_run or Add_quick_test
 
-    public void UpdateTestLog(int result, String comment, bool sendScreenShot, WebDriver driver)
-    {
+        public void RemoveTestRun()
+        {
+            ConnectToVansahRest("RemoveTestRun", null);
+        }
+        //------------------------------------------------------------------------------------------------------------------------------
 
-		//0 = N/A, 1= FAIL, 2= PASS, 3 = Not tested
-		RESULT_KEY = result;
-		COMMENT = comment;
-		SEND_SCREENSHOT = sendScreenShot;
-        ConnectToVansahRest("updateTestLog", driver);
-    }
-    public String Screenshot()
-    {
-            Screenshot ss = ((ITakesScreenshot)driver).GetScreenshot();
-            byte[] buffer = new byte[ss.AsByteArray.Length];
-            String base64 = Convert.ToBase64String(buffer);
-            return base64;
-    }
+        //------------------------------------------ VANSAH REMOVE TEST LOG *********************************************
+        //POST remove_test_log https://apidoc.vansah.com/#789414f9-43e7-4744-b2ca-1aaf9ee878e5
+        //will delete a test_log_identifier created from Add_test_log or Add_quick_test
 
-        private void ConnectToVansahRest(String type, WebDriver driver)
+        public void RemoveTestLog()
+        {
+            ConnectToVansahRest("RemoveTestLog", null);
+        }
+        //------------------------------------------------------------------------------------------------------------------------------
+
+
+        //------------------------------------------ VANSAH UPDATE TEST LOG ------------------------------------------------------------
+        //POST update_test_log https://apidoc.vansah.com/#ae26f43a-b918-4ec9-8422-20553f880b48
+        //will perform any updates required using the test log identifier which is returned from Add_test_log or Add_quick_test
+
+        public void UpdateTestLog(int result, string comment, bool sendScreenShot, IWebDriver driver)
+        {
+
+            //0 = N/A, 1= FAIL, 2= PASS, 3 = Not tested
+            RESULT_KEY = result;
+            COMMENT = comment;
+            SEND_SCREENSHOT = sendScreenShot;
+            ConnectToVansahRest("UpdateTestLog", driver);
+        }
+
+        private void ConnectToVansahRest(string type, IWebDriver driver)
         {
 
             if (updateVansah == "1")
             {
                 httpClient = new HttpClient();
                 HttpResponseMessage response = null;
-                String requestBody;
+                JsonObject requestBody;
                 HttpContent Content;
 
                 //Adding headers
                 httpClient.DefaultRequestHeaders.Accept.Clear();
-                httpClient.DefaultRequestHeaders.Accept.Add(
-                    new MediaTypeWithQualityHeaderValue("application/json"));
+                httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 httpClient.DefaultRequestHeaders.Add("Authorization", VANSAH_TOKEN);
-                if (SEND_SCREENSHOT) {
-
-                    Screenshot();
+                if (SEND_SCREENSHOT)
+                {
+                    Screenshot TakeScreenshot = ((ITakesScreenshot)driver).GetScreenshot();
+                    FILE = TakeScreenshot.AsBase64EncodedString;
 
                 }
-
-                if (type == "addtestRunFromJIRAIssue")
+                if (type == "AddTestRunFromJiraIssue")
                 {
 
-                    requestBody = "{\r\n"
-                               + "    \"case\": {\r\n"
-                               + "        \"key\": \"" + CASE_KEY + "\"\r\n"
-                               + "    },\r\n"
-                               + "    \"asset\": {\r\n"
-                               + "        \"type\": \"issue\",\r\n"
-                               + "        \"key\": \"" + JIRA_ISSUE_KEY + "\"\r\n"
-                               + "    },\r\n"
-                               + "    \"properties\": {\r\n"
-                               + "        \"environment\": {\r\n"
-                               + "            \"name\": \"" + ENVIRONMENT_KEY + "\"\r\n"
-                               + "        },\r\n"
-                               + "        \"release\": {\r\n"
-                               + "            \"name\" : \"" + RELEASE_KEY + "\"\r\n"
-                               + "        },\r\n"
-                               + "        \"sprint\": {\r\n"
-                               + "            \"name\" : \"" + SPRINT_KEY + "\"\r\n"
-                               + "        }\r\n"
-                               + "    },\r\n"
-                               + "     \"project\" :{\r\n"
-                               + "        \"key\":\"" + PROJECT_KEY + "\"\r\n"
-                               + "    }"
-                               + "}";
+                    requestBody = new();
+                    requestBody.Add("case", TestCase());
+                    requestBody.Add("asset", JiraIssueAsset());
+                    if (Properties().Count != 0) { requestBody.Add("properties", Properties()); }
+
+
+
+                    // Console.WriteLine(requestBody);
+                    httpClient.BaseAddress = new Uri(Add_TEST_RUN);
+
+                    Content = new StringContent(requestBody.ToJsonString(), Encoding.UTF8, "application/json" /* or "application/json" in older versions */);
+                    response = httpClient.PostAsync("", Content).Result;
+                    //  Console.WriteLine(response.Content);
+
+                }
+                if (type == "AddTestRunFromTestFolder")
+                {
+                    requestBody = new();
+                    requestBody.Add("case", TestCase());
+                    requestBody.Add("asset", TestFolderAsset());
+                    if (Properties().Count != 0) { requestBody.Add("properties", Properties()); }
 
                     //Console.WriteLine(requestBody);
-                    httpClient.BaseAddress = new Uri(ADD_TEST_RUN);
-                    
-                    Content = new StringContent(requestBody, Encoding.UTF8, "application/json" /* or "application/json" in older versions */);
+                    httpClient.BaseAddress = new Uri(Add_TEST_RUN);
+
+                    Content = new StringContent(requestBody.ToJsonString(), Encoding.UTF8, "application/json" /* or "application/json" in older versions */);
                     response = httpClient.PostAsync("", Content).Result;
 
+
                 }
-                if (type == "addTestRunFromTestFolder")
+                if (type == "AddTestLog")
                 {
-                    requestBody = "{\r\n"
-                             + "    \"case\": {\r\n"
-                             + "        \"key\": \"" + CASE_KEY + "\"\r\n"
-                             + "    },\r\n"
-                             + "    \"asset\": {\r\n"
-                             + "        \"type\": \"folder\",\r\n"
-                             + "        \"identifier\": \"" + TESTFOLDERS_ID + "\"\r\n"
-                             + "    },\r\n"
-                             + "    \"properties\": {\r\n"
-                             + "        \"environment\": {\r\n"
-                             + "            \"name\": \"" + ENVIRONMENT_KEY + "\"\r\n"
-                             + "        },\r\n"
-                             + "        \"release\": {\r\n"
-                             + "            \"name\" : \"" + RELEASE_KEY + "\"\r\n"
-                             + "        },\r\n"
-                             + "        \"sprint\": {\r\n"
-                             + "            \"name\" : \"" + SPRINT_KEY + "\"\r\n"
-                             + "        }\r\n"
-                             + "    },\r\n"
-                             + "     \"project\" :{\r\n"
-                             + "        \"key\":\"" + PROJECT_KEY + "\"\r\n"
-                             + "    }"
-                             + "}";
+                    requestBody = AddTestLogProp();
+                    if (SEND_SCREENSHOT)
+                    {
+                        JsonArray array = new();
+                        array.Add(AddAttachment(FileName()));
 
-                    //Console.WriteLine(requestBody);
-                    httpClient.BaseAddress = new Uri(ADD_TEST_RUN);
+                        requestBody.Add("attachments", array);
+
+
+                    }
+
+                    //      Console.WriteLine(requestBody);
+                    httpClient.BaseAddress = new Uri(Add_TEST_LOG);
 
 
 
-                    Content = new StringContent(requestBody, Encoding.UTF8, "application/json" /* or "application/json" in older versions */);
-                    response = httpClient.PostAsync("", Content).Result;
-
-
-                }
-                if (type == "addTestLog")
-                {
-                    // String filename = "";
-                    // long millis = System.currentTimeMillis();
-                    // String datetime = new Date().toGMTString();
-                    //datetime = datetime.replace(" ", "");
-                    //datetime = datetime.replace(":", "");
-                    // String rndchars = RandomStringUtils.randomAlphanumeric(16);
-                    //filename = rndchars + "_" + datetime + "_" + millis;
-                    requestBody = "{\r\n"
-                            + "	\"run\": {\r\n"
-                            + "		\"identifier\": \"" + TEST_RUN_IDENTIFIER + "\"\r\n"
-                            + "	},\r\n"
-                            + "	\"step\": {\r\n"
-                            + "		\"number\": \"" + STEP_ORDER + "\"\r\n"
-                            + "	},\r\n"
-                            + "	\"result\": {\r\n"
-                            + "		\"id\": " + RESULT_KEY + "\r\n"
-                            + "	},\r\n"
-                            + "	\"actualResult\": \"" + COMMENT + "\",\r\n"
-                            + "     \"project\" :{\r\n"
-                            + "        \"key\":\"" + PROJECT_KEY + "\"\r\n"
-                            + "    }\r\n"
-                            + "     \"attachments\" : [\r\n"
-                            + "		{ "
-                            + "		\"name\" : " + Screenshot() + ","
-                            + "     \"extension\":\"png\",\r\n"
-                            + "		\"file\":\"" + FILE + "\"\r\n"
-                            + "}]"
-                            + "}";
-
-                    //   Console.WriteLine(requestBody);
-                    httpClient.BaseAddress = new Uri(ADD_TEST_LOG);
-
-
-
-                    Content = new StringContent(requestBody, Encoding.UTF8, "application/json" /* or "application/json" in older versions */);
+                    Content = new StringContent(requestBody.ToJsonString(), Encoding.UTF8, "application/json" /* or "application/json" in older versions */);
                     response = httpClient.PostAsync("", Content).Result;
 
                 }
-                if (type == "addQuickTestFromJiraISSUE")
+                if (type == "AddQuickTestFromJiraIssue")
                 {
 
-                    requestBody = "{\r\n"
-                            + "    \"case\": {\r\n"
-                            + "        \"key\": \"" + CASE_KEY + "\"\r\n"
-                            + "    },\r\n"
-                            + "    \"asset\": {\r\n"
-                            + "        \"type\": \"issue\",\r\n"
-                            + "        \"key\": \"" + JIRA_ISSUE_KEY + "\"\r\n"
-                            + "    },\r\n"
-                            + "    \"properties\": {\r\n"
-                            + "        \"environment\": {\r\n"
-                            + "            \"name\": \"" + ENVIRONMENT_KEY + "\"\r\n"
-                            + "        },\r\n"
-                            + "        \"release\": {\r\n"
-                            + "            \"name\" : \"" + RELEASE_KEY + "\"\r\n"
-                            + "        },\r\n"
-                            + "        \"sprint\": {\r\n"
-                            + "            \"name\" : \"" + SPRINT_KEY + "\"\r\n"
-                            + "        }\r\n"
-                            + "    },\r\n"
-                            + "     \"project\" :{\r\n"
-                            + "        \"key\":\"" + PROJECT_KEY + "\"\r\n"
-                            + "    },\r\n"
-                            + "      \"result\": {\r\n"
-                            + "        \"id\": \"" + RESULT_KEY + "\"\r\n"
-                            + "    }"
-                            + "}";
-                    //   Console.WriteLine(requestBody);
-                    httpClient.BaseAddress = new Uri(ADD_TEST_RUN);
+                    requestBody = new();
+                    requestBody.Add("case", TestCase());
+                    requestBody.Add("asset", JiraIssueAsset());
+                    if (Properties().Count != 0)
+                    {
+                        requestBody.Add("properties", Properties());
+                    }
+                    requestBody.Add("result", resultObj(RESULT_KEY));
+                    if (SEND_SCREENSHOT)
+                    {
+                        JsonArray array = new();
+                        array.Add(AddAttachment(FileName()));
+
+                        requestBody.Add("attachments", array);
+                    }
+
+                    Console.WriteLine(requestBody);
+                    httpClient.BaseAddress = new Uri(Add_TEST_RUN);
 
 
 
-                    Content = new StringContent(requestBody, Encoding.UTF8, "application/json" /* or "application/json" in older versions */);
+                    Content = new StringContent(requestBody.ToJsonString(), Encoding.UTF8, "application/json" /* or "application/json" in older versions */);
                     response = httpClient.PostAsync("", Content).Result;
 
                 }
-                if (type == "addQuickTestFromTestFolders")
+                if (type == "AddQuickTestFromTestFolders")
                 {
-                    requestBody = "{\r\n"
-                            + "    \"case\": {\r\n"
-                            + "        \"key\": \"" + CASE_KEY + "\"\r\n"
-                            + "    },\r\n"
-                            + "    \"asset\": {\r\n"
-                            + "        \"type\": \"folder\",\r\n"
-                            + "        \"identifier\": \"" + TESTFOLDERS_ID + "\"\r\n"
-                            + "    },\r\n"
-                            + "    \"properties\": {\r\n"
-                            + "        \"environment\": {\r\n"
-                            + "            \"name\": \"" + ENVIRONMENT_KEY + "\"\r\n"
-                            + "        },\r\n"
-                            + "        \"release\": {\r\n"
-                            + "            \"name\" : \"" + RELEASE_KEY + "\"\r\n"
-                            + "        },\r\n"
-                            + "        \"sprint\": {\r\n"
-                            + "            \"name\" : \"" + SPRINT_KEY + "\"\r\n"
-                            + "        }\r\n"
-                            + "    },\r\n"
-                            + "     \"project\" :{\r\n"
-                            + "        \"key\":\"" + PROJECT_KEY + "\"\r\n"
-                            + "    },\r\n"
-                            + "      \"result\": {\r\n"
-                            + "        \"id\": \"" + RESULT_KEY + "\"\r\n"
-                            + "    }"
-                            + "}";
+                    requestBody = new();
+                    requestBody.Add("case", TestCase());
+                    requestBody.Add("asset", TestFolderAsset());
+                    if (Properties().Count != 0)
+                    {
+                        requestBody.Add("properties", Properties());
+                    }
+                    requestBody.Add("result", resultObj(RESULT_KEY));
+                    if (SEND_SCREENSHOT)
+                    {
+                        JsonArray array = new();
+                        array.Add(AddAttachment(FileName()));
 
-
-                    //   Console.WriteLine(requestBody);
-                    httpClient.BaseAddress = new Uri(ADD_TEST_RUN);
+                        requestBody.Add("attachments", array);
+                    }
 
 
 
-                    Content = new StringContent(requestBody, Encoding.UTF8, "application/json" /* or "application/json" in older versions */);
+                    Console.WriteLine(requestBody);
+                    httpClient.BaseAddress = new Uri(Add_TEST_RUN);
+
+
+
+                    Content = new StringContent(requestBody.ToJsonString(), Encoding.UTF8, "application/json" /* or "application/json" in older versions */);
                     response = httpClient.PostAsync("", Content).Result;
 
                 }
-                if (type == "removeTestRun")
+                if (type == "RemoveTestRun")
                 {
                     //Console.WriteLine(requestBody);
-                    httpClient.BaseAddress = new Uri(REMOVE_TEST_RUN + TEST_RUN_IDENTIFIER);                
+                    httpClient.BaseAddress = new Uri(REMOVE_TEST_RUN + TEST_RUN_IDENTIFIER);
                     response = httpClient.DeleteAsync("").Result;
                 }
 
 
-                if (type == "removeTestLog")
+                if (type == "RemoveTestLog")
                 {
                     //Console.WriteLine(requestBody);
                     httpClient.BaseAddress = new Uri(REMOVE_TEST_LOG + TEST_LOG_IDENTIFIER);
@@ -422,17 +329,22 @@ namespace Practice
                 }
 
 
-                if (type == "updateTestLog")
+                if (type == "UpdateTestLog")
                 {
-                    requestBody = "{\r\n"
-                            + "    \"result\": {\r\n"
-                            + "        \"id\": \"" + RESULT_KEY + "\"\r\n"
-                            + "    },\r\n"
-                            + "    \"actualResult\": \"" + COMMENT + "\"\r\n"
-                            + "}";
+                    requestBody = new();
+
+                    requestBody.Add("result", resultObj(RESULT_KEY));
+                    requestBody.Add("actualResult", COMMENT);
+                    if (SEND_SCREENSHOT)
+                    {
+                        JsonArray array = new();
+                        array.Add(AddAttachment(FileName()));
+
+                        requestBody.Add("attachments", array);
+                    }
                     //Console.WriteLine(requestBody);
                     httpClient.BaseAddress = new Uri(UPDATE_TEST_LOG + TEST_LOG_IDENTIFIER);
-                     Content = new StringContent(requestBody, Encoding.UTF8, "application/json" /* or "application/json" in older versions */);
+                    Content = new StringContent(requestBody.ToJsonString(), Encoding.UTF8, "application/json" /* or "application/json" in older versions */);
                     response = httpClient.PutAsync("", Content).Result;
                 }
 
@@ -442,31 +354,47 @@ namespace Practice
 
                     var responseMessage = response.Content.ReadAsStringAsync().Result;
                     var obj = JObject.Parse(responseMessage);
-                    if (type == "addtestRunFromJIRAIssue")
+                    //Console.WriteLine(obj);
+                    if (type == "AddTestRunFromJiraIssue")
                     {
 
                         TEST_RUN_IDENTIFIER = obj.SelectToken("data.run.identifier").ToString();
                         Console.WriteLine($"Test Run has been created Successfully RUN ID : {TEST_RUN_IDENTIFIER}");
 
                     }
-                    if (type == "addTestRunFromTestFolder") 
+                    if (type == "AddTestRunFromTestFolder")
                     {
                         TEST_RUN_IDENTIFIER = obj.SelectToken("data.run.identifier").ToString();
                         Console.WriteLine($"Test Run has been created Successfully RUN ID : {TEST_RUN_IDENTIFIER}");
                     }
-                    if (type == "addTestLog")
+                    if (type == "AddTestLog")
                     {
                         TEST_LOG_IDENTIFIER = obj.SelectToken("data.log.identifier").ToString();
-                        Console.WriteLine($"Test Log has been added to a test Step Successfully LOG ID : {TEST_LOG_IDENTIFIER}");
+                        Console.WriteLine($"Test Log has been Added to a test Step Successfully LOG ID : {TEST_LOG_IDENTIFIER}");
 
                     }
-                    if (type == "removeTestLog")
+                    if (type == "AddQuickTestFromJiraIssue")
+                    {
+
+                        string message = obj.SelectToken("message").ToString();
+                        Console.WriteLine($"Quick Test : {message}");
+
+                    }
+                    if (type == "AddQuickTestFromTestFolders")
+                    {
+
+                        string message = obj.SelectToken("message").ToString();
+                        Console.WriteLine($"Quick Test : {message}");
+
+                    }
+                    if (type == "RemoveTestLog")
                     {
                         Console.WriteLine($"Test Log has been removed from a test Step Successfully LOG ID : {TEST_LOG_IDENTIFIER}");
                     }
-                    if (type == "removeTestRun") {
+                    if (type == "RemoveTestRun")
+                    {
                         Console.WriteLine($"Test Run has been removed Successfully for the testCase : {CASE_KEY} RUN ID : {TEST_RUN_IDENTIFIER}");
-                    
+
                     }
                     response.Dispose();
 
@@ -475,16 +403,209 @@ namespace Practice
                 {
                     var responseMessage = response.Content.ReadAsStringAsync().Result;
                     var obj = JObject.Parse(responseMessage);
+                    // Console.WriteLine(obj);
                     Console.WriteLine(obj.SelectToken("message").ToString());
                     response.Dispose();
                 }
 
             }
-            else {
+            else
+            {
                 Console.WriteLine("Sending Test Results to Vansah TM for JIRA is Disabled");
             }
         }
-        
+        //Setter and Getter's 
+        //To Set the TestFolderID 
+        public void SetTESTFOLDERS_ID(string tESTFOLDERS_ID)
+        {
+            this.TESTFOLDERS_ID = tESTFOLDERS_ID;
+        }
+
+        //To Set the JIRA_ISSUE_KEY
+        public void SetJIRA_ISSUE_KEY(string jIRA_ISSUE_KEY)
+        {
+            this.JIRA_ISSUE_KEY = jIRA_ISSUE_KEY;
+        }
+
+        //To Set the SPRINT_NAME
+        public void SetSPRINT_NAME(string SPRINT_NAME)
+        {
+            this.SPRINT_NAME = SPRINT_NAME;
+        }
+
+        //To Set the RELEASE_NAME
+        public void SetRELEASE_NAME(string RELEASE_NAME)
+        {
+            this.RELEASE_NAME = RELEASE_NAME;
+        }
+
+        //To Set the ENVIRONMENT_NAME
+        public void SetENVIRONMENT_NAME(string ENVIRONMENT_NAME)
+        {
+            this.ENVIRONMENT_NAME = ENVIRONMENT_NAME;
+        }
+
+        //JsonObject - Test Run Properties 
+        private JsonObject Properties()
+        {
+            JsonObject environment = new();
+            environment.Add("name", ENVIRONMENT_NAME);
+
+            JsonObject release = new();
+            release.Add("name", RELEASE_NAME);
+
+            JsonObject sprint = new();
+            sprint.Add("name", SPRINT_NAME);
+
+            JsonObject Properties = new();
+            if (SPRINT_NAME != null)
+            {
+                if (SPRINT_NAME.Length >= 2)
+                {
+                    Properties.Add("sprint", sprint);
+                }
+            }
+            if (RELEASE_NAME != null)
+            {
+                if (RELEASE_NAME.Length >= 2)
+                {
+                    Properties.Add("release", release);
+                }
+            }
+            if (ENVIRONMENT_NAME != null)
+            {
+                if (ENVIRONMENT_NAME.Length >= 2)
+                {
+                    Properties.Add("environment", environment);
+                }
+            }
+
+            return Properties;
+        }
+
+
+        //JsonObject - To Add TestCase Key
+        private JsonObject TestCase()
+        {
+
+            JsonObject testCase = new();
+            if (CASE_KEY != null)
+            {
+                if (CASE_KEY.Length >= 2)
+                {
+                    testCase.Add("key", CASE_KEY);
+                }
+            }
+            else
+            {
+                Console.WriteLine("Please Provide Valid TestCase Key");
+            }
+
+            return testCase;
+        }
+        //JsonObject - To Add Result ID
+        private JsonObject resultObj(int result)
+        {
+
+            JsonObject resultID = new();
+
+            resultID.Add("id", result);
+
+
+            return resultID;
+        }
+        //JsonObject - To Add JIRA Issue name
+        private JsonObject JiraIssueAsset()
+        {
+
+            JsonObject asset = new();
+            if (JIRA_ISSUE_KEY != null)
+            {
+                if (JIRA_ISSUE_KEY.Length >= 2)
+                {
+                    asset.Add("type", "issue");
+                    asset.Add("key", JIRA_ISSUE_KEY);
+                }
+            }
+            else
+            {
+                Console.WriteLine("Please Provide Valid JIRA Issue Key");
+            }
+
+
+            return asset;
+        }
+        //JsonObject - To Add TestFolder ID 
+        private JsonObject TestFolderAsset()
+        {
+
+            JsonObject asset = new();
+            if (TESTFOLDERS_ID != null)
+            {
+                if (TESTFOLDERS_ID.Length >= 2)
+                {
+                    asset.Add("type", "folder");
+                    asset.Add("identifier", TESTFOLDERS_ID);
+                }
+            }
+            else
+            {
+                Console.WriteLine("Please Provide Valid TestFolder ID");
+            }
+
+
+            return asset;
+        }
+
+        //JsonObject - To AddTestLog
+        private JsonObject AddTestLogProp()
+        {
+
+            JsonObject testRun = new();
+            testRun.Add("identifier", TEST_RUN_IDENTIFIER);
+
+            JsonObject stepNumber = new();
+            stepNumber.Add("number", STEP_ORDER);
+
+            JsonObject testResult = new();
+            testResult.Add("id", RESULT_KEY);
+
+            JsonObject testLogProp = new();
+
+            testLogProp.Add("run", testRun);
+
+            testLogProp.Add("step", stepNumber);
+
+            testLogProp.Add("result", testResult);
+
+            testLogProp.Add("actualResult", COMMENT);
+
+
+            return testLogProp;
+        }
+        //JsonObject - To Add Add Attachments to a Test Log
+        private JsonObject AddAttachment(string File)
+        {
+
+            JsonObject attachmentsInfo = new();
+            attachmentsInfo.Add("name", File);
+            attachmentsInfo.Add("extension", "png");
+            //Console.WriteLine(attachmentsInfo);
+            attachmentsInfo.Add("file", FILE);
+
+            return attachmentsInfo;
+
+        }
+
+        //Set FileName
+        private string FileName()
+        {
+
+            string filename = Path.GetRandomFileName().Replace(".", "");
+
+            return filename;
+        }
+
 
     }
 }
