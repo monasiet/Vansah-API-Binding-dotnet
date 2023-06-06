@@ -7,7 +7,7 @@
 </h1>
 <p align="center">
    Vansah's API can be used to integrate Vansah with various tools, automation and development frameworks including third-party applications.
-   This .NET Binder is used for .NET automation projects with C#. Example tools would be Selenium with (.NET C#, VB) 
+   This .NET Binder is used for .NET automation projects with C#. Example tools would be Selenium with (.NET C#) 
 </p>
 <br />
 
